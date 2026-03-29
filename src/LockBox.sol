@@ -11,6 +11,9 @@ contract LockBox {
     /* Errors */
     error LockBox__NotEnoughSent();
     error LockBox__NotEnoughDuration();
+    error LockBox__YouHaveNoActiveDeposit();
+    error LockBox__NotEnoughTimeHasPassed();
+    error LockBox__TransferFailed();
 
     /* Type declarations */
     enum State {
@@ -34,6 +37,7 @@ contract LockBox {
 
     /* Events */
     event NewDeposit(address indexed sender);
+    event NewWithdraw(address indexed sender);
 
     /* Constructor */
     constructor(AggregatorV3Interface priceFeed) {
@@ -63,10 +67,27 @@ contract LockBox {
 
     function witdraw() external {
         // Checks
+        if (s_depositInfo[msg.sender].state == State.Inactive) {
+            revert LockBox__YouHaveNoActiveDeposit();
+        }
+
+        if (s_depositInfo[msg.sender].duration < block.timestamp) {
+            revert LockBox__NotEnoughTimeHasPassed();
+        }
 
         // Effects
+        s_depositInfo[msg.sender].state = State.Inactive;
+
+        (bool success,) = payable(msg.sender).call{value: s_depositInfo[msg.sender].amount}("");
+        if (!success) {
+            revert LockBox__TransferFailed();
+        }
+
+        s_depositInfo[msg.sender].amount = 0;
+        s_depositInfo[msg.sender].duration = 0;
 
         // Interactions
+        emit NewWithdraw(msg.sender);
     }
 
     /* Getter functions */
