@@ -125,6 +125,98 @@ contract TestLockBox is Test {
     }
 
     /* Withdraw testing functions */
+    function testRevertsIsStateIsInacive() public {
+        // Arrange
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__YouHaveNoActiveDeposit.selector);
+
+        // Act / Assert
+        lockBox.withdraw();
+    }
+
+    function testRevertsIfNotEnoughTimeHasPassed() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__NotEnoughTimeHasPassed.selector);
+
+        // Act / Assert
+        lockBox.withdraw();
+    }
+
+    function testStateIsInactiveBeforeTransfer() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Act
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION + 10 days);
+        lockBox.withdraw();
+
+        // Assert
+        assertEq(uint256(lockBox.getLockState(USER)), uint256(LockBox.State.Inactive));
+    }
+
+    function testAmountIsZeroBeforeTransfer() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Act
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION + 10 days);
+        lockBox.withdraw();
+
+        // Assert
+        assertEq(lockBox.getLockAmount(USER), 0);
+    }
+
+    function testDurationIsZeroBeforeTransfer() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Act
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION + 10 days);
+        lockBox.withdraw();
+
+        // Assert
+        assertEq(lockBox.getLockDuration(USER), 0);
+    }
+
+    function testContractsBalanceIsZeroAfterTransfer() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Act
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION + 10 days);
+        lockBox.withdraw();
+
+        // Assert
+        assertEq(lockBox.getContractBalance(), 0);
+    }
+
+    function testEmitsNewWithdrawAfterSuccessfulWithdraw() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION + 10 days);
+
+        // Act
+        vm.expectEmit(true, false, false, false);
+        emit NewWithdraw(USER);
+
+        // Assert
+        lockBox.withdraw();
+    }
 
     /* Extend lock testing functions */
 }
