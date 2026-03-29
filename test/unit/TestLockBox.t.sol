@@ -16,7 +16,10 @@ contract TestLockBox is Test {
     address USER = makeAddr("USER");
     address JOINER = makeAddr("JOINER");
     uint256 public constant DEAL = 10 ether;
-    uint256 public constant SEND_AMOUNT = 0.1 ether;
+    uint256 public constant SEND_AMOUNT = 0.5 ether;
+
+    uint256 public constant LOCK_DURATION = 10 days;
+    uint256 public constant BELOW_MIN_LOCK_DURATION = 2 days;
 
     /* Events */
     event NewDeposit(address indexed sender);
@@ -48,6 +51,78 @@ contract TestLockBox is Test {
     }
 
     /* Deposit testing functions */
+    function testRevertsIfStateIsActive() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__AlreadyHasActiveDeposit.selector);
+
+        // Act / Assert
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+    }
+
+    function testRevertsIfNotEnoughMoneySent() public {
+        // Arrange
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__NotEnoughSent.selector);
+
+        // Act / Assert
+        lockBox.deposit(LOCK_DURATION);
+    }
+
+    function testRevertsIfNotEnoughDurationSet() public {
+        // Arrange
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__NotEnoughDuration.selector);
+
+        // Act / Assert
+        lockBox.deposit{value: SEND_AMOUNT}(BELOW_MIN_LOCK_DURATION);
+    }
+
+    function testDepositAmountGetsSetCorrectly() public {
+        // Arrange
+        vm.prank(USER);
+
+        // Act
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Assert
+        assertEq(lockBox.getLockAmount(USER), SEND_AMOUNT);
+    }
+
+    function testDepositDurationGetsSetCorrectly() public {
+        // Arrange
+        vm.prank(USER);
+
+        // Act
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Assert
+        assertEq(lockBox.getLockDuration(USER), (block.timestamp + LOCK_DURATION));
+    }
+
+    function testDepositStateGetsSetCorrectly() public {
+        // Arrange
+        vm.prank(USER);
+
+        // Act
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Assert
+        assertEq(uint256(lockBox.getLockState(USER)), uint256(LockBox.State.Active));
+    }
+
+    function testEmitsWhenDepositMade() public {
+        // Arrange
+        vm.prank(USER);
+        vm.expectEmit(true, false, false, false);
+        emit NewDeposit(USER);
+
+        // Act / Assert
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+    }
 
     /* Withdraw testing functions */
 
