@@ -118,4 +118,28 @@ contract LockBox {
     function getOwner() external view returns (address) {
         return i_owner;
     }
+
+    function getMinUsdAmonut() external pure returns (uint256) {
+        return MIN_USD_AMOUNT;
+    }
+
+    function getMinLockDuration() external pure returns (uint256) {
+        return MIN_LOCK_DURATION;
+    }
+
+    function getMinExtension() external pure returns (uint256) {
+        return MIN_EXTENSION;
+    }
+
+    function getLockState() external view returns (State) {
+        return s_depositInfo[msg.sender].state;
+    }
+
+    function getLockAmount() external view returns (uint256) {
+        return s_depositInfo[msg.sender].amount;
+    }
+
+    function getLockDuration() external view returns (uint256) {
+        return s_depositInfo[msg.sender].duration;
+    }
 }
