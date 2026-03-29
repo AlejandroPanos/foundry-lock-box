@@ -142,15 +142,15 @@ contract LockBox {
         return MIN_EXTENSION;
     }
 
-    function getLockState() external view returns (State) {
-        return s_depositInfo[msg.sender].state;
+    function getLockState(address depositor) external view returns (State) {
+        return s_depositInfo[depositor].state;
     }
 
-    function getLockAmount() external view returns (uint256) {
-        return s_depositInfo[msg.sender].amount;
+    function getLockAmount(address depositor) external view returns (uint256) {
+        return s_depositInfo[depositor].amount;
     }
 
-    function getLockDuration() external view returns (uint256) {
-        return s_depositInfo[msg.sender].duration;
+    function getLockDuration(address depositor) external view returns (uint256) {
+        return s_depositInfo[depositor].duration;
     }
 }
