@@ -18,6 +18,7 @@ contract LockBox {
     error LockBox__DurationHasExpired();
     error LockBox__ExtensionCannotBeBehindOriginalDuration();
     error LockBox__ExtensionMustBeGreater();
+    error LockBox__DirectTransfersNotAllowed();
 
     /* Type declarations */
     enum State {
@@ -130,7 +131,7 @@ contract LockBox {
         return i_owner;
     }
 
-    function getMinUsdAmonut() external pure returns (uint256) {
+    function getMinUsdAmount() external pure returns (uint256) {
         return MIN_USD_AMOUNT;
     }
 
@@ -156,5 +157,14 @@ contract LockBox {
 
     function getContractBalance() external view returns (uint256) {
         return address(this).balance;
+    }
+
+    /* Receive & Fallback */
+    receive() external payable {
+        revert LockBox__DirectTransfersNotAllowed();
+    }
+
+    fallback() external payable {
+        revert LockBox__DirectTransfersNotAllowed();
     }
 }

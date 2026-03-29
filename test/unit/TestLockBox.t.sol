@@ -41,7 +41,7 @@ contract TestLockBox is Test {
     }
 
     function testMinimumAmountIsTwoHundred() public view {
-        assertEq(lockBox.getMinUsdAmonut(), 200e18);
+        assertEq(lockBox.getMinUsdAmount(), 200e18);
     }
 
     function testMinimumLockIsSevenDays() public view {
@@ -243,16 +243,15 @@ contract TestLockBox is Test {
         lockBox.extendLock(NEW_LOCK_TIME);
     }
 
-    function testRevertsIfExtensionBehinOriginalDuration() public {
-        // Arrange
+    function testRevertsIfExtensionBehindOriginalDuration() public {
         vm.prank(USER);
         lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
 
+        vm.warp(block.timestamp + 5 days); 
+
         vm.prank(USER);
         vm.expectRevert(LockBox.LockBox__ExtensionCannotBeBehindOriginalDuration.selector);
-
-        // Act / Assert
-        lockBox.extendLock(NEW_LOCK_TIME);
+        lockBox.extendLock(2 days); 
     }
 
     function testRevertsIfNewLockTimeIsBelowMinimum() public {
@@ -274,7 +273,7 @@ contract TestLockBox is Test {
 
         // Act
         vm.prank(USER);
-        vm.warp(LOCK_DURATION);
+        vm.warp(block.timestamp + 3 days); 
         lockBox.extendLock(NEW_LOCK_TIME);
 
         // Assert
