@@ -37,7 +37,7 @@ contract HelperConfig is Script {
             return activeNetworkConfig;
         }
 
-        vm.broadcast();
+        vm.startBroadcast();
         MockV3Aggregator mockPriceFeed = new MockV3Aggregator(DECIMALS, INITIAL_ANSWER);
         vm.stopBroadcast();
 
