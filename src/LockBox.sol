@@ -9,24 +9,26 @@ contract LockBox {
     using PriceConverter for uint256;
 
     /* Errors */
+    error LockBox__NotEnoughSent();
     error LockBox__NotEnoughDuration();
+    error LockBox__OnlyOwnerCanDeposit();
 
     /* Type declarations */
     enum State {
-        Active,
-        Inactive
+        Inactive,
+        Active
     }
 
     struct DepositInfo {
         uint256 amount;
-        uint256 timestamp;
+        uint256 duration;
         State state;
     }
 
     /* State variables */
     address immutable i_owner;
     AggregatorV3Interface private s_priceFeed;
-    uint256 private constant MIN_AMOUNT = 200e18;
+    uint256 private constant MIN_USD_AMOUNT = 200e18;
     uint256 private constant MIN_LOCK_DURATION = 7 days;
     uint256 private constant MIN_EXTENSION = 7 days;
     mapping(address => DepositInfo) private s_depositInfo;
@@ -41,15 +43,27 @@ contract LockBox {
     }
 
     /* Functions */
-    function deposit(uint256 lockTime) external {
+    function deposit(uint256 lockTime) external payable {
         // Checks
+        if (msg.value.convertPrice(s_priceFeed) < MIN_USD_AMOUNT) {
+            revert LockBox__NotEnoughSent();
+        }
+
         if (lockTime < MIN_LOCK_DURATION) {
             revert LockBox__NotEnoughDuration();
         }
 
+        if (msg.sender != i_owner) {
+            revert LockBox__OnlyOwnerCanDeposit();
+        }
+
         // Effects
+        DepositInfo memory depositInfo = DepositInfo({amount: msg.value, duration: lockTime, state: State.Active});
+
+        s_depositInfo[msg.sender] = depositInfo;
 
         // Interactions
+        emit NewDeposit(msg.sender);
     }
 
     /* Getter functions */
