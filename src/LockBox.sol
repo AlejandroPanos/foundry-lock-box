@@ -110,7 +110,7 @@ contract LockBox {
             revert LockBox__DurationHasExpired();
         }
 
-        if (s_depositInfo[msg.sender].duration > newLockTime) {
+        if (s_depositInfo[msg.sender].duration > block.timestamp + newLockTime) {
             revert LockBox__ExtensionCannotBeBehindOriginalDuration();
         }
 
@@ -119,7 +119,7 @@ contract LockBox {
         }
 
         // Effects
-        s_depositInfo[msg.sender].duration = newLockTime;
+        s_depositInfo[msg.sender].duration = block.timestamp + newLockTime;
 
         // Interactions
         emit UpdatedLocktime(msg.sender, newLockTime);
