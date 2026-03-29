@@ -15,7 +15,8 @@ contract LockBox {
     error LockBox__NotEnoughTimeHasPassed();
     error LockBox__TransferFailed();
     error LockBox__DurationHasExpired();
-    error LockBox__NewLockShouldBeGreater();
+    error LockBox__ExtensionCannotBeBehindOriginalDuration();
+    error LockBox__ExtensionMustBeGreater();
 
     /* Type declarations */
     enum State {
@@ -104,7 +105,11 @@ contract LockBox {
         }
 
         if (s_depositInfo[msg.sender].duration > newLockTime) {
-            revert LockBox__NewLockShouldBeGreater();
+            revert LockBox__ExtensionCannotBeBehindOriginalDuration();
+        }
+
+        if (newLockTime < MIN_EXTENSION) {
+            revert LockBox__ExtensionMustBeGreater();
         }
 
         // Effects
