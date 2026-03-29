@@ -11,7 +11,6 @@ contract LockBox {
     /* Errors */
     error LockBox__NotEnoughSent();
     error LockBox__NotEnoughDuration();
-    error LockBox__OnlyOwnerCanDeposit();
 
     /* Type declarations */
     enum State {
@@ -53,10 +52,6 @@ contract LockBox {
             revert LockBox__NotEnoughDuration();
         }
 
-        if (msg.sender != i_owner) {
-            revert LockBox__OnlyOwnerCanDeposit();
-        }
-
         // Effects
         DepositInfo memory depositInfo = DepositInfo({amount: msg.value, duration: lockTime, state: State.Active});
 
@@ -64,6 +59,14 @@ contract LockBox {
 
         // Interactions
         emit NewDeposit(msg.sender);
+    }
+
+    function witdraw() external {
+        // Checks
+
+        // Effects
+
+        // Interactions
     }
 
     /* Getter functions */
