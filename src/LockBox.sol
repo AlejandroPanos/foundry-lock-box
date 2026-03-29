@@ -9,6 +9,7 @@ contract LockBox {
     using PriceConverter for uint256;
 
     /* Errors */
+    error LockBox__AlreadyHasActiveDeposit();
     error LockBox__NotEnoughSent();
     error LockBox__NotEnoughDuration();
     error LockBox__YouHaveNoActiveDeposit();
@@ -44,14 +45,18 @@ contract LockBox {
     event UpdatedLocktime(address indexed sender, uint256 indexed newLockTime);
 
     /* Constructor */
-    constructor(AggregatorV3Interface priceFeed) {
+    constructor(address priceFeed) {
         i_owner = msg.sender;
-        s_priceFeed = priceFeed;
+        s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
     /* Functions */
     function deposit(uint256 lockTime) external payable {
         // Checks
+        if (s_depositInfo[msg.sender].state == State.Active) {
+            revert LockBox__AlreadyHasActiveDeposit();
+        }
+
         if (msg.value.convertPrice(s_priceFeed) < MIN_USD_AMOUNT) {
             revert LockBox__NotEnoughSent();
         }
@@ -61,7 +66,8 @@ contract LockBox {
         }
 
         // Effects
-        DepositInfo memory depositInfo = DepositInfo({amount: msg.value, duration: lockTime, state: State.Active});
+        DepositInfo memory depositInfo =
+            DepositInfo({amount: msg.value, duration: block.timestamp + lockTime, state: State.Active});
 
         s_depositInfo[msg.sender] = depositInfo;
 
@@ -69,26 +75,26 @@ contract LockBox {
         emit NewDeposit(msg.sender);
     }
 
-    function witdraw() external {
+    function withdraw() external {
         // Checks
         if (s_depositInfo[msg.sender].state == State.Inactive) {
             revert LockBox__YouHaveNoActiveDeposit();
         }
 
-        if (s_depositInfo[msg.sender].duration < block.timestamp) {
+        if (s_depositInfo[msg.sender].duration > block.timestamp) {
             revert LockBox__NotEnoughTimeHasPassed();
         }
 
         // Effects
+        uint256 amount = s_depositInfo[msg.sender].amount;
         s_depositInfo[msg.sender].state = State.Inactive;
+        s_depositInfo[msg.sender].amount = 0;
+        s_depositInfo[msg.sender].duration = 0;
 
-        (bool success,) = payable(msg.sender).call{value: s_depositInfo[msg.sender].amount}("");
+        (bool success,) = payable(msg.sender).call{value: amount}("");
         if (!success) {
             revert LockBox__TransferFailed();
         }
-
-        s_depositInfo[msg.sender].amount = 0;
-        s_depositInfo[msg.sender].duration = 0;
 
         // Interactions
         emit NewWithdraw(msg.sender);
