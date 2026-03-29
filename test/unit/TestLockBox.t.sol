@@ -247,11 +247,11 @@ contract TestLockBox is Test {
         vm.prank(USER);
         lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
 
-        vm.warp(block.timestamp + 5 days); 
+        vm.warp(block.timestamp + 5 days);
 
         vm.prank(USER);
         vm.expectRevert(LockBox.LockBox__ExtensionCannotBeBehindOriginalDuration.selector);
-        lockBox.extendLock(2 days); 
+        lockBox.extendLock(2 days);
     }
 
     function testRevertsIfNewLockTimeIsBelowMinimum() public {
@@ -273,7 +273,7 @@ contract TestLockBox is Test {
 
         // Act
         vm.prank(USER);
-        vm.warp(block.timestamp + 3 days); 
+        vm.warp(LOCK_DURATION);
         lockBox.extendLock(NEW_LOCK_TIME);
 
         // Assert
