@@ -14,6 +14,8 @@ contract LockBox {
     error LockBox__YouHaveNoActiveDeposit();
     error LockBox__NotEnoughTimeHasPassed();
     error LockBox__TransferFailed();
+    error LockBox__DurationHasExpired();
+    error LockBox__NewLockShouldBeGreater();
 
     /* Type declarations */
     enum State {
@@ -32,12 +34,13 @@ contract LockBox {
     AggregatorV3Interface private s_priceFeed;
     uint256 private constant MIN_USD_AMOUNT = 200e18;
     uint256 private constant MIN_LOCK_DURATION = 7 days;
-    uint256 private constant MIN_EXTENSION = 7 days;
+    uint256 private constant MIN_EXTENSION = 1 days;
     mapping(address => DepositInfo) private s_depositInfo;
 
     /* Events */
     event NewDeposit(address indexed sender);
     event NewWithdraw(address indexed sender);
+    event UpdatedLocktime(address indexed sender, uint256 indexed newLockTime);
 
     /* Constructor */
     constructor(AggregatorV3Interface priceFeed) {
@@ -88,6 +91,27 @@ contract LockBox {
 
         // Interactions
         emit NewWithdraw(msg.sender);
+    }
+
+    function extendLock(uint256 newLockTime) external {
+        // Checks
+        if (s_depositInfo[msg.sender].state == State.Inactive) {
+            revert LockBox__YouHaveNoActiveDeposit();
+        }
+
+        if (s_depositInfo[msg.sender].duration <= block.timestamp) {
+            revert LockBox__DurationHasExpired();
+        }
+
+        if (s_depositInfo[msg.sender].duration > newLockTime) {
+            revert LockBox__NewLockShouldBeGreater();
+        }
+
+        // Effects
+        s_depositInfo[msg.sender].duration = newLockTime;
+
+        // Interactions
+        emit UpdatedLocktime(msg.sender, newLockTime);
     }
 
     /* Getter functions */
