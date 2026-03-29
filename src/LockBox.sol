@@ -110,12 +110,12 @@ contract LockBox {
             revert LockBox__DurationHasExpired();
         }
 
-        if (s_depositInfo[msg.sender].duration > block.timestamp + newLockTime) {
-            revert LockBox__ExtensionCannotBeBehindOriginalDuration();
-        }
-
         if (newLockTime < MIN_EXTENSION) {
             revert LockBox__ExtensionMustBeGreater();
+        }
+
+        if (s_depositInfo[msg.sender].duration > block.timestamp + newLockTime) {
+            revert LockBox__ExtensionCannotBeBehindOriginalDuration();
         }
 
         // Effects

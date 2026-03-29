@@ -20,6 +20,8 @@ contract TestLockBox is Test {
 
     uint256 public constant LOCK_DURATION = 10 days;
     uint256 public constant BELOW_MIN_LOCK_DURATION = 2 days;
+    uint256 public constant NEW_LOCK_TIME = 5 days;
+    uint256 public constant BELOW_MIN_EXTRA_LOCK_TIME = 6 hours;
 
     /* Events */
     event NewDeposit(address indexed sender);
@@ -219,4 +221,76 @@ contract TestLockBox is Test {
     }
 
     /* Extend lock testing functions */
+    function testRevertsIfStateIsInactiveWhenExtending() public {
+        // Arrange
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__YouHaveNoActiveDeposit.selector);
+
+        // Act / Assert
+        lockBox.extendLock(NEW_LOCK_TIME);
+    }
+
+    function testRevertsIfDurationHasExpiredAndCannotIncrease() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION + 10 days);
+        vm.expectRevert(LockBox.LockBox__DurationHasExpired.selector);
+
+        // Act / Assert
+        lockBox.extendLock(NEW_LOCK_TIME);
+    }
+
+    function testRevertsIfExtensionBehinOriginalDuration() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__ExtensionCannotBeBehindOriginalDuration.selector);
+
+        // Act / Assert
+        lockBox.extendLock(NEW_LOCK_TIME);
+    }
+
+    function testRevertsIfNewLockTimeIsBelowMinimum() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        vm.prank(USER);
+        vm.expectRevert(LockBox.LockBox__ExtensionMustBeGreater.selector);
+
+        // Act / Assert
+        lockBox.extendLock(BELOW_MIN_EXTRA_LOCK_TIME);
+    }
+
+    function testNewDurationGetsSetCorrectly() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Act
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION);
+        lockBox.extendLock(NEW_LOCK_TIME);
+
+        // Assert
+        assertEq(lockBox.getLockDuration(USER), (block.timestamp + NEW_LOCK_TIME));
+    }
+
+    function testEmitsUpdatedLocktimeAfterSuccessfulUpdate() public {
+        // Arrange
+        vm.prank(USER);
+        lockBox.deposit{value: SEND_AMOUNT}(LOCK_DURATION);
+
+        // Act / Assert
+        vm.prank(USER);
+        vm.warp(LOCK_DURATION);
+        vm.expectEmit(true, true, false, false);
+        emit UpdatedLocktime(USER, NEW_LOCK_TIME);
+        lockBox.extendLock(NEW_LOCK_TIME);
+    }
 }
