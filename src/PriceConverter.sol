@@ -13,7 +13,7 @@ library PriceConverter {
         return uint256(price * 1e10);
     }
 
-    function priceConverter(uint256 ethAmount, AggregatorV3Interface priceFeed) internal view returns (uint256) {
+    function convertPrice(uint256 ethAmount, AggregatorV3Interface priceFeed) internal view returns (uint256) {
         // Get the current price
         uint256 price = getPrice(priceFeed);
 
